@@ -1,4 +1,5 @@
 local class = require 'middleclass'
+require 'TEsound'
 
 world = class('world')
 
@@ -11,6 +12,7 @@ local _leftBorder
 local _rightBorder
 local _botBorder
 local _topBorder
+local _muted = false
 
 function world:initialize(map, collider, gravity)
   _map = map
@@ -24,6 +26,18 @@ function world:initialize(map, collider, gravity)
   _rightBorder = collider:rectangle(_width, -10, 10, _height + 20)
   _botBorder = collider:rectangle(-10, _height, _width + 20, 10)
   _topBorder = collider:rectangle(-10, -10, _width + 20, 10)
+
+  TEsound.playLooping('assets/MSTR_-_MSTR_-_Choro_bavario_Loop.ogg', 'bgm')
+end
+
+function world:mute()
+  if _muted == false then
+    TEsound.pause('bgm')
+    _muted = true
+  else
+    TEsound.resume('bgm')
+    _muted = false
+  end
 end
 
 -- what happens when two things collide

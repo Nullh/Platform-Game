@@ -1,8 +1,9 @@
 local HC = require 'HC'
 require 'mapLoader'
 require 'player'
-require 'screen'
+require 'camera'
 require 'world'
+require 'TEsound'
 
 debug = true
 local blockingObj = {}
@@ -14,15 +15,55 @@ function love.keyreleased(key, scancode)
   end
 end
 
+function love.keypressed(key, scancode, isrepeat)
+  if scancode == 'm' and isrepeat == false then
+    myWorld.mute()
+  end
+end
 
 function love.load()
   gravity = 50
   map = mapLoader:new('maps/map2.lua', 'assets/Sprute.png')
-  myScreen = screen:new(map:getWidth(), map:getHeight())
   collider = HC.new(300)
-  myPlayer = player:new('assets/luigi.png', 100, 100, 300, 300, 16, 0.4, collider, gravity)
+  myPlayer = player:new(100, 100, 300, 300, 16, 0.4, collider, gravity)
   blockingObj = map:getMapObjectLayer(collider, 'blocking')
   myWorld = world:new(map, collider, 500)
+
+  mountains = love.graphics.newImage('assets/mountains.png')
+  background = love.graphics.newImage('assets/background.png')
+  foreground = love.graphics.newImage('assets/closebg.png')
+
+  myCamera = camera:new(map:getWidth(), map:getHeight(), 0, 1, 1)
+  myCamera:newLayer(1, 1.3, function()
+    love.graphics.setColor(256, 256, 256)
+    --map:draw(1, 1)
+    love.graphics.draw(foreground, 0, 100)
+  end)
+  myCamera:newLayer(-1, 1.0, function()
+    love.graphics.setColor(255, 255, 255)
+    myPlayer:draw()
+  end)
+  myCamera:newLayer(0, 1, function()
+    love.graphics.setColor(255, 255, 255)
+    map:draw(2, 10)
+    if debug == true then
+      love.graphics.setColor(100, 100, 100, 150)
+      for i, v in ipairs(blockingObj) do
+        v:draw('fill')
+      end
+    end
+  end)
+  myCamera:newLayer(-5, 0.3, function()
+    love.graphics.setColor(256, 256, 256)
+    --map:draw(1, 1)
+    love.graphics.draw(mountains)
+  end)
+  myCamera:newLayer(-10, 0, function()
+    love.graphics.setColor(256, 256, 256)
+    --map:draw(1, 1)
+    love.graphics.draw(background)
+  end)
+
 end
 
 function love.update(dt)
@@ -43,33 +84,17 @@ function love.update(dt)
     love.event.quit()
   end
 
-  if love.keyboard.isScancodeDown('m') then
-    myPlayer:setSpeed(1000)
-  end
-
-  --myWorld:gravity(myPlayer, dt)
   myPlayer:update(dt, spaceReleased)
-  screen:centerOn(myPlayer:getX(), myPlayer:getY())
+  myCamera:centerOn(myPlayer:getX(), myPlayer:getY())
+  TEsound.cleanup()
 end
 
 function love.draw()
-  love.graphics.push()
-  screen:translate()
-  map:draw(1, 1)
-  myPlayer:draw()
-  map:draw(2, 10)
+  myCamera:draw()
 
-  if debug == true then
-    love.graphics.setColor(100, 100, 100, 150)
-    for i, v in ipairs(blockingObj) do
-      v:draw('fill')
-    end
-    love.graphics.setColor(256, 256, 256)
-  end
-  love.graphics.pop()
   if debug == true then
     if spaceReleased then love.graphics.print('true', 100, 100)
     else love.graphics.print('false', 100, 100) end
-    love.graphics.print(myPlayer:getJumpTimer(), 100, 120)
+    love.graphics.print(myPlayer:getYVelocity(), 100, 120)
   end
 end
